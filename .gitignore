@@ -4,3 +4,4 @@ core
 *.pyc
 *.jpg
 *.png
+*.log

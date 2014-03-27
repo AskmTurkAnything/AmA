@@ -14,12 +14,36 @@ class Chunker:
         ft = mt[0]
 
         if ft.split("/")[0] in ("image"):
-            pass
+            self.requester.initialize_request_details("Look at the given image and try and provide question(s)", "View the given image and come up with logical, relevant question(s) that can be used as study material.", "education, study, school")
+            # self.requester.initialize_request_details("Look at the given image and try and provide question(s)",
+				# "View the given image and come up with logical, relevant questions that can be used as study material.",
+				# "education, study, school")
+			
+            self.requester.create_question(title_text = "(Need image specific title)", 
+typeflag = "image", question_text = upload_image(filename))
+			
+            self.requester.build_question_form()
+			
+            self.requester.launch_hit()
         else:
             paragraphs = self.chunk_text(filename)
-
+            self.requester.initialize_request_details("Read the given paragraph and try and provide question(s)", "Read the given paragraph and come up with logical, relevant question(s) that can be used as study material.", "education, study, school")
+			
+			# self.requester.initialize_request_details(
+				# "Read the given paragraph and try and provide question(s)",
+				# "Read the given paragraph and come up with logical, relevant questions that can be used as study material.",
+				# "education, study, school")
+			
             for paragraph in paragraphs:
-                # text send question
+		self.requester.create_question(
+					title_text = "(Need paragraph specific title)",
+					typeflag = "text",
+					question_text = paragraph)
+				
+					
+                self.requester.build_question_form()
+				
+                self.requester.launch_hit()
 
     def determine_filetype(self, filename):
         return mimetypes.guess_type(filename)

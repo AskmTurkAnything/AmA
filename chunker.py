@@ -13,7 +13,7 @@ class Chunker:
                 filename = "log.log",
                 format = "%(asctime)s %(levelname)s %(message)s")
 
-    def process_file(self, filename):
+    def process_file(self, filename, max_assignments = 3, cost = 0.02, keywords = "education, study, school", ):
         logging.info("CHUNKER | Processing %s" % filename)
 
         mt = self.determine_filetype(filename)
@@ -24,9 +24,9 @@ class Chunker:
             logging.info("CHUNKER | %s is an image" % filename)
 
             self.requester.initialize_request_details(
-                    "Look at the given image and try and provide question(s) Kappa",
+                    "Look at the given image and try and provide question(s)",
                     "View the given image and come up with logical, relevant question(s) that can be used as study material.",
-                    "education, study, school")
+                    keywords)
 
             self.requester.create_question(
                     title_text = "(Need image specific title)",
@@ -35,7 +35,7 @@ class Chunker:
 
             self.requester.build_question_form()
 
-            self.requester.launch_hit()
+            self.requester.launch_hit(max_assignments, reward = cost)
         else:
             logging.info("CHUNKER | %s is text" % filename)
 
@@ -44,7 +44,7 @@ class Chunker:
             self.requester.initialize_request_details(
                     "Read the given paragraph and try and provide question(s)",
                     "Read the given paragraph and come up with logical, relevant question(s) that can be used as study material.",
-                    "education, study, school")
+                    keywords)
 
             for paragraph in paragraphs:
                 self.requester.create_question(
@@ -54,7 +54,7 @@ class Chunker:
 
                 self.requester.build_question_form()
 
-                self.requester.launch_hit()
+                self.requester.launch_hit(max_assignments, reward = cost)
 
     def determine_filetype(self, filename):
         return mimetypes.guess_type(filename)

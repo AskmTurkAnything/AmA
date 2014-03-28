@@ -4,11 +4,12 @@ from boto.mturk.question import *
 
 class Verifier:
 
-    self.choices = ["Option 1", "Option 2", "Option 3"]
+    
     
     def __init__(self):
         self.HOST = "mechanicalturk.sandbox.amazonaws.com"
         self.mtc = MTurkConnection(host=self.HOST)
+        self.choices = ["Option 1", "Option 2", "Option 3"]
         
     def initialize_request_details(self, title, description, keywords):
         logging.info("VERIFIER | Request details: title = %s, description = %s, keywords = %s" % (title, description, keywords))
@@ -48,7 +49,7 @@ class Verifier:
         
         ans1 = SelectionAnswer(style="radiobutton",selections=self.choices,type="text",other=False)
         
-        self.q1 = Question(identifier="Question 1", content=qc1, answer_spec=AnswerSpecification(ans1))
+        self.q1 = Question(identifier="Verification", content=qc1, answer_spec=AnswerSpecification(ans1))
             
         
         
@@ -67,4 +68,4 @@ class Verifier:
         logging.info("VERIFIER | Launching hit...")
 
         # Creating the HIT
-        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward)
+        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward, annotation="Verification")

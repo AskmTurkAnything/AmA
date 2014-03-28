@@ -1,9 +1,11 @@
-import time, logging, sys, shelve
+import time, logging, sys, shelve, verifier
+import xml.dom.minidom
 from boto.mturk.connection import MTurkConnection
 
 class StudyHit:
-    def __init__(self, hit_id, required_for_verification = 3):
-        self.hit_id = hit_id
+    def __init__(self, hit, verifier, required_for_verification = 3):
+        self.hit = mtc.get_hit(hit.HITId)[0]
+        self.verifier = verifier
         self.required_for_verification = required_for_verification
         self.assignments = {}
 
@@ -20,7 +22,37 @@ class StudyHit:
             if assignment["status"] == "pending":
                 count += 1
 
-        return count >= 3
+        return count >= self.required_for_verification
+        
+    def return_pending_questions(self):
+        count = 1
+        questions_to_send = []
+        for assignment in self.assignments.values():
+            if assignment["status"] == "pending":
+                questions_to_send.append("Option " + str(count) + ": " + assignment["question"])
+                count += 1
+        return questions_to_send
+        
+    def get_text(self, node):
+        logging.debug("Grabbing text from node...")
+        rc = []
+        for n in node:
+            if n.nodeType == n.TEXT_NODE:
+                rc.append(n.data)
+        return "".join(rc)
+        
+    def get_question_deets(self):
+        question = xml.dom.minidom.parseString(self.hit.Question)
+        
+        question_identifier = self.get_text(question.getElementsByTagName("QuestionIdentifier")[1].childNodes)
+            
+        if question_identifier != "Image Question 1":
+            question_text = self.get_text(question.getElementsByTagName("Text")[0].childNodes)
+        else:
+            question_text = self.get_text(question.getElementsByTagName("DataURL")[0].childNodes)
+    
+        print(self.hit.RequesterAnnotation, question_identifier, question_text)
+        return ( self.hit.RequesterAnnotation, question_identifier, question_text )
 
 
 mtc = MTurkConnection(host = "mechanicalturk.sandbox.amazonaws.com")
@@ -50,7 +82,21 @@ def reject_answer(assign_id, hit_id):
 def verify_quality(answer):
     return answer.strip().lower() == "verified"
 
+def send_for_verification(hit):
+    logging.info("Hit ready for verification: %s" % hit.hit.HITId)
+    hit.return_pending_questions()
+    
+    if hit.get_question_deets()[1] == "Image Question 1":
+        hit.verifier.initialize_request_details("View the given image and pick the question that is most relevant",
+                "View the given image and pick the best question amongst the three that is most relevant",
+                "education, study, school")
+        hit.verifier.create_verification_question(question_text=hit.get_question_deets()[2],typeflag="image",title_text="View the given image and pick the best question amongst the three that is most relevant")
+        hit.verifier.build_question_form()
+        hit.verifier.launch_hit()
+
 def preprocess_answer(answer, assignment, hit_id):
+    logging.info("Preprocess answer...")
+
     hit = encountered_hits[hit_id]
 
     hit.add_assignment(assignment.AssignmentId)
@@ -63,7 +109,10 @@ def preprocess_answer(answer, assignment, hit_id):
         #encountered_assignments[assignment.AssignmentId] = {"status":"pending","question":line[0],"hit_id":hit_id}
 
     if hit.is_ready_for_verification():
-        logging.info("Hit ready for verification: %s" % hit_id)
+        if hit.get_question_deets()[0] == "Question":
+            send_for_verification(hit)
+        
+        
 
 def gather_hits(page_size = 10):
     logging.info("Gathering reviewable hits: page_size = %s" % page_size)
@@ -84,7 +133,7 @@ def run():
         for hit in hits:
 
             if hit.HITId not in encountered_hits:
-                encountered_hits[hit.HITId] = StudyHit(hit.HITId)
+                encountered_hits[hit.HITId] = StudyHit(hit, verifier.Verifier(), 2)
 
             assignments = mtc.get_assignments(hit.HITId)
 

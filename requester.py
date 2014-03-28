@@ -43,10 +43,13 @@ class Requester:
 
         # Question 1
         qc1=QuestionContent()
+        identifier = ""
         if typeflag == "image":
             qc1.append(Binary("image", "jpg", question_text,title_text))
+            identifier = "Image Question 1"
         else:
             qc1.append_field("Text",question_text)
+            identifier = "Text Question 1"
 
         lc = LengthConstraint(10)
 
@@ -55,7 +58,7 @@ class Requester:
 
         ans1 = FreeTextAnswer(constraints=cs)
 
-        self.q1 = Question(identifier="Question 1", content=qc1, answer_spec=AnswerSpecification(ans1))
+        self.q1 = Question(identifier=identifier, content=qc1, answer_spec=AnswerSpecification(ans1))
 
         # Insert more questions here in the above format as needed.
 
@@ -70,27 +73,10 @@ class Requester:
         self.question_form.append(self.q1)
 
 
-    def launch_hit(self, max_assignments=3, duration=60*5, reward=0.02):
+    def launch_hit(self, max_assignments=2, duration=60*5, reward=0.02):
         logging.info("REQUESTER | Launching hit...")
 
         # Creating the HIT
-        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward)
-
-
-# if __name__ == "__main__":
-	# if (len(sys.argv) < 3):
-		# print "Usage: python requester.py <typeflag> <text_to_create_question/url_of_image>"
-		# sys.exit(0)
-	# typeflag = sys.argv[1]
-	# req = Requester()
-	# req.initialize_request_details("Read the given material and provide question(s)",
-		# "Read the given paragraph and come up with logical, relevant questions that can be used in a study review session",
-		# "education, study, school")
-
-	# req.create_question(title_text="Question This", typeflag=typeflag, question_text="https://i.imgur.com/UWnTcNs.jpg?1")
-	# #req.create_question(title_text="Question This", typeflag=typeflag,question_text="Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras nisi elit, rutrum nec laoreet et, rhoncus condimentum tellus. Donec quam est, condimentum ullamcorper sapien id, porta volutpat mauris. Pellentesque at elit euismod, congue mi non, tristique lorem. Morbi ornare, turpis sed dapibus dignissim, leo dolor aliquet nulla, vitae auctor sapien odio id mi. Proin ut rutrum mi, sit amet cursus felis. Aliquam in nulla sed arcu vestibulum auctor eu eget metus. Curabitur dolor eros, eleifend quis varius quis, malesuada quis ipsum. Praesent elementum velit eu nibh ultricies fringilla. In suscipit facilisis erat, sit amet tempor mauris dapibus et. Duis faucibus eros ut urna interdum gravida. Integer cursus enim cursus accumsan posuere. Cras laoreet tristique quam ut facilisis. Mauris congue nibh eu tellus consequat eleifend. Aenean viverra eros in risus euismod, sit amet lobortis augue venenatis.")
-	# req.build_question_form()
-	# req.launch_hit()
-	# req.account_balance()
+        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward, annotation="Question")
 
 

@@ -25,11 +25,20 @@ class Requester:
         self.overview.append_field("Title",title_text)
         self.overview.append(FormattedContent("""
             <ul>
-                <li><font size="1" color="gray">Read the paragraph and write down one or more questions (max 5)</font></li>
-                <li><font size="1" color="gray">Number your questions (1.,2.,etc.)</font></li>
+                <li><font size="1" color="gray">Read these instructions carefully before proceeding.</font></li>
+                <li><font size="1" color="gray">For the second question, read the paragraph/view the image and write down ONE MEANINGFUL question that captures its essence.</font></li>
                 <li><font size="1" color="gray">Each Question will be verified against several factors like length, accuracy etc.</font></li>
-                <li><font size="1" color="gray">Example Response: \"1.What time of the day is it?\"</font></li>
+                <li><font size="1" color="gray">Example Response: \"What is the definition of mTurking?\"</font></li>
             </ul>"""))
+
+
+        # IQ Test Question
+        iqc1=QuestionContent()
+        iqc1.append_field("Text","What is the fifth word in the third instruction?")
+
+        ians1 = FreeTextAnswer()
+
+        self.iq1 = Question(identifier="Check", content = iqc1, answer_spec=AnswerSpecification(ians1))
 
 
         # Question 1
@@ -39,9 +48,14 @@ class Requester:
         else:
             qc1.append_field("Text",question_text)
 
-        ans1 = FreeTextAnswer()
+        lc = LengthConstraint(10)
 
-        self.q1 = Question(identifier="Question", content=qc1, answer_spec=AnswerSpecification(ans1))
+        cs = Constraints()
+        cs.append(lc)
+
+        ans1 = FreeTextAnswer(constraints=cs)
+
+        self.q1 = Question(identifier="Question 1", content=qc1, answer_spec=AnswerSpecification(ans1))
 
         # Insert more questions here in the above format as needed.
 
@@ -52,13 +66,16 @@ class Requester:
 
         self.question_form = QuestionForm()
         self.question_form.append(self.overview)
+        self.question_form.append(self.iq1)
         self.question_form.append(self.q1)
 
-    def launch_hit(self):
+
+    def launch_hit(self, max_assignments=3, duration=60*5, reward=0.02):
         logging.info("REQUESTER | Launching hit...")
 
         # Creating the HIT
-        self.mtc.create_hit(questions=self.question_form, max_assignments=2, title=self.title, description=self.description, keywords=self.keywords, duration=60*5, reward=0.05)
+        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward)
+
 
 # if __name__ == "__main__":
 	# if (len(sys.argv) < 3):

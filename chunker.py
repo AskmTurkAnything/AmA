@@ -24,7 +24,7 @@ class Chunker:
             logging.info("CHUNKER | %s is an image" % filename)
 
             self.requester.initialize_request_details(
-                    "Look at the given image and try and provide question(s)",
+                    "Look at the given image and try and provide question(s) Kappa",
                     "View the given image and come up with logical, relevant question(s) that can be used as study material.",
                     "education, study, school")
 

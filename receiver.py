@@ -1,73 +1,12 @@
-import time, logging, sys, shelve, verifier
-import xml.dom.minidom
+import time, logging, sys, verifier, studyhit
 from boto.mturk.connection import MTurkConnection
 
-class StudyHit:
-    def __init__(self, hit, verifier, required_for_verification = 3):
-        self.hit = mtc.get_hit(hit.HITId)[0]
-        self.verifier = verifier
-        self.required_for_verification = required_for_verification
-        self.assignments = {}
-
-    def add_assignment(self, assign_id, status = "pending", question = ""):
-        self.assignments[assign_id] = {
-            "status": status,
-            "question": question
-        }
-
-    def mark_as_done(self):
-        for assignment in self.assignments.values():
-            if assignment["status"] == "pending":
-                assignment["status"] = "done"
-        
-    def is_ready_for_verification(self):
-        count = 0
-
-        for assignment in self.assignments.values():
-            if assignment["status"] == "pending":
-                count += 1
-
-        return count >= self.required_for_verification
-
-    def get_pending_questions(self):
-        count = 1
-        questions_to_send = []
-        for assignment in self.assignments.values():
-            if assignment["status"] == "pending":
-                questions_to_send.append(("Option " + str(count) + ": " + assignment["question"], count))
-                count += 1
-        return questions_to_send
-
-    def get_text(self, node):
-        logging.debug("Grabbing text from node...")
-        rc = []
-        for n in node:
-            if n.nodeType == n.TEXT_NODE:
-                rc.append(n.data)
-        return "".join(rc)
-
-    def get_question_deets(self):
-        question = xml.dom.minidom.parseString(self.hit.Question)
-
-        question_identifier = self.get_text(question.getElementsByTagName("QuestionIdentifier")[1].childNodes)
-
-        if question_identifier != "Image Question 1":
-            question_text = self.get_text(question.getElementsByTagName("Text")[1].childNodes)
-        else:
-            question_text = self.get_text(question.getElementsByTagName("DataURL")[0].childNodes)
-
-        print(self.hit.RequesterAnnotation, question_identifier, question_text)
-        return ( self.hit.RequesterAnnotation, question_identifier, question_text )
-
-
 mtc = MTurkConnection(host = "mechanicalturk.sandbox.amazonaws.com")
-
-hit_store = shelve.open("hits.shelve", writeback = True)
 
 encountered_hits = {}
 
 logging.basicConfig(
-        level = logging.INFO,
+        level = logging.DEBUG,
         filename = "receiver.log",
         format = "%(asctime)s %(levelname)s %(message)s")
 
@@ -97,32 +36,64 @@ def send_for_verification(hit):
         hit.verifier.initialize_request_details("View the given image and pick the question that is most relevant",
                 "View the given image and pick the best question amongst the three that is most relevant",
                 "education, study, school")
-        hit.verifier.create_verification_question(question_text=details[2],typeflag="image",title_text="View the given image and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions())
+        hit.verifier.create_verification_question(question_text=details[2],typeflag="image",title_text="View the given image and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions(), hitid = hit.hit.HITId)
     elif details[1] == "Text Question 1":
-        hit.verifier.initialize_request_details("Read the given paragraph and pick the question that is most relevant",
+        hit.verifier.initialize_request_details("Please Read the given paragraph and pick the question that is most relevant",
                 "Read the given paragraph and pick the best question amongst the three that is most relevant",
                 "education, study, school")
-        hit.verifier.create_verification_question(question_text=details[2],typeflag="text",title_text="Read the given paragraph and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions())
+        hit.verifier.create_verification_question(question_text=details[2],typeflag="text",title_text="Read the given paragraph and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions(), hitid = hit.hit.HITId)
 
     hit.verifier.build_question_form()
-    hit.verifier.launch_hit()
+    hit.verifier.launch_hit(hitid = hit.hit.HITId)
 
-    
-    
-def preprocess_answer(answer, assignment, hit_id):
+def process_verification_results(hit, original_hitid):
+    #print type(hit), dir(hit)
+    original_assignments = mtc.get_assignments(original_hitid)
+    rank = {}
+    for assign_id, assignment in hit.assignments.items():
+        if assignment["question"] not in rank:
+            rank[assignment["question"]] = 0
+
+        rank[assignment["question"]] += 1
+
+        for field in assignment["question2"]:
+            if field not in rank:
+                rank[field] = 0
+
+            rank[field] -= 1
+
+    for assign_id, score in rank.items():
+        if score > 0:
+            mtc.approve_assignment(assign_id, feedback = "Thanks!")
+        else:
+            mtc.reject_assignment(assign_id)
+
+
+
+def preprocess_answer(answers, assignment, hit_id):
     logging.info("Preprocess answer for assignment %s" % assignment.AssignmentId)
 
     hit = encountered_hits[hit_id]
 
-    hit.add_assignment(assignment.AssignmentId, question = answer.strip())
+    hit.add_assignment(assignment.AssignmentId, question = answers[1].fields[0].strip())
+    details = hit.get_question_deets()
+    tag = details[0].split()
+
+    if tag[0] == "Verification":
+        #logging.info("ANSWER FIELDS : %s " % str(answers[2].fields[0]) + str(answers[2].fields[1]))
+        hit.assignments[assignment.AssignmentId]["question2"] = answers[2].fields
+        hit.mark_as_done(assignment.AssignmentId)
+        logging.info("HIT DETAILS FOR VERIFICATION: %s" % str(hit.assignments))
 
     if hit.is_ready_for_verification():
-        details = hit.get_question_deets()
+        logging.info("Hit ready for verification")
 
-        if details[0] == "Question":
+        if tag[0] == "Question":
             send_for_verification(hit)
-        elif details[0] == "Verification":
-            hit.mark_as_done()
+
+        elif tag[0]== "Verification":
+            logging.info(str(tag))
+            process_verification_results(hit, tag[1])
 
 def gather_hits(page_size = 10):
     logging.info("Gathering reviewable hits: page_size = %s" % page_size)
@@ -134,14 +105,12 @@ def run(max_assignments):
         hits = gather_hits()
 
         for hit in hits:
-
             if hit.HITId not in encountered_hits:
-                encountered_hits[hit.HITId] = StudyHit(hit, verifier.Verifier(), max_assignments)
+                encountered_hits[hit.HITId] = studyhit.StudyHit(mtc.get_hit(hit.HITId)[0], verifier.Verifier(), max_assignments)
 
             assignments = mtc.get_assignments(hit.HITId)
 
             for assignment in assignments:
-
                 if assignment.AssignmentId not in encountered_hits[hit.HITId].assignments and assignment.AssignmentStatus != "Rejected":
                     logging.info("Answers from worker %s" % assignment.WorkerId)
                     logging.info("Assignment ID: %s" % assignment.AssignmentId)
@@ -156,18 +125,13 @@ def run(max_assignments):
                     if quality:
                         logging.info("Answer: %s" % answers[1].fields[0])
 
-                        preprocess_answer(answers[1].fields[0], assignment, hit.HITId)
+                        preprocess_answer(answers, assignment, hit.HITId)
                     else:
                         reject_answer(assignment.AssignmentId, hit.HITId)
 
-                    hit_store[str(hit.HITId)] = encountered_hits[hit.HITId]
-
-                    hit_store.sync()
 
         time.sleep(15)
 
 if __name__ == "__main__":
 
-    run(sys.argv[1])
-
-    hit_store.close()
+    run(int(sys.argv[1]))

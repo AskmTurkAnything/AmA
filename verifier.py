@@ -18,7 +18,7 @@ class Verifier:
         self.description = description
         self.keywords = keywords
 
-    def create_verification_question(self, question_text, typeflag, choices, title_text="Select the Question That Best Captures the Essence of the Given Text"):
+    def create_verification_question(self, question_text, typeflag, choices, hitid, title_text="Select the Question That Best Captures the Essence of the Given Text", max_choices = 3):
         logging.info("VERIFIER | Creating question: question_text = %s, typeflag = %s, title_text = %s" % (question_text, typeflag, title_text))
 
         # BUILD OVERVIEW
@@ -49,9 +49,14 @@ class Verifier:
 
         ans1 = SelectionAnswer(style="radiobutton",selections=choices,type="text",other=False)
 
-        self.q1 = Question(identifier="Verification Question 1", content=qc1, answer_spec=AnswerSpecification(ans1))
+        self.q1 = Question(identifier=hitid, content=qc1, answer_spec=AnswerSpecification(ans1))
 
+        qc2 = QuestionContent()
+        qc2.append_field("Text", "Mark any questions that are either nonsense or irrelevant, if applicable")
 
+        ans2 = SelectionAnswer(style = "checkbox", selections = choices, type = "text", other = False, max = max_choices)
+
+        self.q2 = Question(identifier = "Rejects", content = qc2, answer_spec = AnswerSpecification(ans2))
 
 
     def build_question_form(self):
@@ -63,9 +68,10 @@ class Verifier:
         self.question_form.append(self.overview)
         self.question_form.append(self.iq1)
         self.question_form.append(self.q1)
+        self.question_form.append(self.q2)
 
-    def launch_hit(self, max_assignments=2, duration=60*5, reward=0.02):
+    def launch_hit(self, hitid,  max_assignments=2, duration=60*5, reward=0.02):
         logging.info("VERIFIER | Launching hit...")
 
         # Creating the HIT
-        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward, annotation="Verification")
+        self.mtc.create_hit(questions=self.question_form, max_assignments=max_assignments, title=self.title, description=self.description, keywords=self.keywords, duration=duration, reward=reward, annotation="Verification "+str(hitid))

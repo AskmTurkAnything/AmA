@@ -17,6 +17,13 @@ stdoutHandler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(messag
 
 logging.getLogger().addHandler(stdoutHandler)
 
+def write_answers_to_file(filename, data):
+    with open(filename, 'w') as f:
+        for line in data:
+            f.write(line)
+    return True
+
+
 def reject_answer(assign_id, hit_id):
     logging.info("Assignment %s rejected due to failed quality check!" % assign_id)
 
@@ -33,12 +40,12 @@ def send_for_verification(hit):
 
     if details[1] == "Image Question 1":
     # TODO: Make tags open ended
-        hit.verifier.initialize_request_details("View the given image and pick the question that is most relevant",
+        hit.verifier.initialize_request_details("View the  given image and pick the question that is most relevant",
                 "View the given image and pick the best question amongst the three that is most relevant",
                 "education, study, school")
         hit.verifier.create_verification_question(question_text=details[2],typeflag="image",title_text="View the given image and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions(), hitid = hit.hit.HITId)
     elif details[1] == "Text Question 1":
-        hit.verifier.initialize_request_details("Please Read the given paragraph and pick the question that is most relevant",
+        hit.verifier.initialize_request_details("Homie, Read the given paragraph and pick the question that is most relevant",
                 "Read the given paragraph and pick the best question amongst the three that is most relevant",
                 "education, study, school")
         hit.verifier.create_verification_question(question_text=details[2],typeflag="text",title_text="Read the given paragraph and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions(), hitid = hit.hit.HITId)
@@ -47,7 +54,6 @@ def send_for_verification(hit):
     hit.verifier.launch_hit(hitid = hit.hit.HITId)
 
 def process_verification_results(hit, original_hitid):
-    #print type(hit), dir(hit)
     original_assignments = mtc.get_assignments(original_hitid)
     rank = {}
     for assign_id, assignment in hit.assignments.items():
@@ -62,12 +68,19 @@ def process_verification_results(hit, original_hitid):
 
             rank[field] -= 1
 
+    to_print = []
     for assign_id, score in rank.items():
         if score > 0:
+            original_hit = encountered_hits[original_hitid]
+            to_print.append("Question Text : \n" + original_hit.get_question_deets()[2] + "\nChosen Answer : \n" + original_hit.assignments[assign_id]["question"] + "\n")
+
             mtc.approve_assignment(assign_id, feedback = "Thanks!")
         else:
             mtc.reject_assignment(assign_id)
 
+    if write_answers_to_file("yadayada.txt", to_print):
+        mtc.disable_hit(hit.hit.HITId)
+        mtc.dispose_hit(original_hitid)
 
 
 def preprocess_answer(answers, assignment, hit_id):

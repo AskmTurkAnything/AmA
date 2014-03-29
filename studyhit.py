@@ -57,5 +57,4 @@ class StudyHit:
         else:
             question_text = self.get_text(question.getElementsByTagName("DataURL")[0].childNodes)
 
-        print(self.hit.RequesterAnnotation, question_identifier, question_text)
         return ( self.hit.RequesterAnnotation, question_identifier, question_text )

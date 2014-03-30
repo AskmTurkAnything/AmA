@@ -70,7 +70,7 @@ class Verifier:
         self.question_form.append(self.q1)
         self.question_form.append(self.q2)
 
-    def launch_hit(self, hitid,  max_assignments=2, duration=60*5, reward=0.02):
+    def launch_hit(self, hitid,  max_assignments=3, duration=60*5, reward=0.02):
         logging.info("VERIFIER | Launching hit...")
 
         # Creating the HIT

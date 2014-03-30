@@ -45,7 +45,7 @@ def send_for_verification(hit):
                 "education, study, school")
         hit.verifier.create_verification_question(question_text=details[2],typeflag="image",title_text="View the given image and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions(), hitid = hit.hit.HITId)
     elif details[1] == "Text Question 1":
-        hit.verifier.initialize_request_details("Homie, Read the given paragraph and pick the question that is most relevant",
+        hit.verifier.initialize_request_details("Read the given paragraph and pick the question that is most relevant",
                 "Read the given paragraph and pick the best question amongst the three that is most relevant",
                 "education, study, school")
         hit.verifier.create_verification_question(question_text=details[2],typeflag="text",title_text="Read the given paragraph and pick the best question amongst the three that is most relevant", choices = hit.get_pending_questions(), hitid = hit.hit.HITId)

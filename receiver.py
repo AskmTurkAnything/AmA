@@ -6,7 +6,7 @@ mtc = MTurkConnection(host = "mechanicalturk.amazonaws.com")
 encountered_hits = {}
 
 logging.basicConfig(
-        level = logging.DEBUG,
+        level = logging.INFO,
         filename = "receiver.log",
         format = "%(asctime)s %(levelname)s %(message)s")
 
@@ -79,7 +79,10 @@ def process_verification_results(hit, original_hitid):
             mtc.reject_assignment(assign_id)
 
     if write_answers_to_file(time.strftime("%d-%m-%Y"), to_print):
+        logging.info("Disabling verification hit: %s" % hit.hit.HITId)
         mtc.disable_hit(hit.hit.HITId)
+
+        logging.info("Disposing requester hit: %s" % original_hitid)
         mtc.dispose_hit(original_hitid)
 
 
@@ -121,7 +124,10 @@ def run(max_assignments):
             if hit.HITId not in encountered_hits:
                 encountered_hits[hit.HITId] = studyhit.StudyHit(mtc.get_hit(hit.HITId)[0], verifier.Verifier(), max_assignments)
 
-            assignments = mtc.get_assignments(hit.HITId)
+            try:
+                assignments = mtc.get_assignments(hit.HITId)
+            except:
+                logging.warn("HERE! HERE!! HERE!!! Service Unavailable!")
 
             for assignment in assignments:
                 if assignment.AssignmentId not in encountered_hits[hit.HITId].assignments and assignment.AssignmentStatus != "Rejected":
@@ -143,7 +149,7 @@ def run(max_assignments):
                         reject_answer(assignment.AssignmentId, hit.HITId)
 
 
-        time.sleep(15)
+        time.sleep(60)
 
 if __name__ == "__main__":
 

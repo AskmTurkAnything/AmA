@@ -4,6 +4,6 @@ core
 *.pyc
 *.jpg
 *.png
-*.log
+*.log*
 *.shelve
 *.txt

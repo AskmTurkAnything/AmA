@@ -1,4 +1,4 @@
-import logging, xml.dom.minidom
+import logging, xml.dom.minidom, re
 
 class StudyHit:
     def __init__(self, hit, verifier, required_for_verification = 3):
@@ -48,6 +48,10 @@ class StudyHit:
         return "".join(rc)
 
     def get_question_deets(self):
+        taboo = re.sub('[ -~]', '', self.hit.Question)
+        print "problems are! :", taboo
+        for character in taboo:
+            self.hit.Question = self.hit.Question.replace(character,"")
         question = xml.dom.minidom.parseString(self.hit.Question)
 
         question_identifier = self.get_text(question.getElementsByTagName("QuestionIdentifier")[1].childNodes)

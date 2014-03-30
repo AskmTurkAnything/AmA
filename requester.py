@@ -6,7 +6,7 @@ class Requester:
     # Initializing the MTurkConnection
 
     def __init__(self):
-        self.HOST = "mechanicalturk.sandbox.amazonaws.com"
+        self.HOST = "mechanicalturk.amazonaws.com"
         self.mtc = MTurkConnection(host=self.HOST)
 
     # Create Overview of the Turk details

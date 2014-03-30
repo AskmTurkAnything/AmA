@@ -1,7 +1,7 @@
 import time, logging, sys, verifier, studyhit
 from boto.mturk.connection import MTurkConnection
 
-mtc = MTurkConnection(host = "mechanicalturk.sandbox.amazonaws.com")
+mtc = MTurkConnection(host = "mechanicalturk.amazonaws.com")
 
 encountered_hits = {}
 
@@ -18,7 +18,7 @@ stdoutHandler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(messag
 logging.getLogger().addHandler(stdoutHandler)
 
 def write_answers_to_file(filename, data):
-    with open(filename, 'w') as f:
+    with open(filename, 'a') as f:
         for line in data:
             f.write(line)
     return True
@@ -78,7 +78,7 @@ def process_verification_results(hit, original_hitid):
         else:
             mtc.reject_assignment(assign_id)
 
-    if write_answers_to_file("yadayada.txt", to_print):
+    if write_answers_to_file(time.strftime("%d-%m-%Y"), to_print):
         mtc.disable_hit(hit.hit.HITId)
         mtc.dispose_hit(original_hitid)
 

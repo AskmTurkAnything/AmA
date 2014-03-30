@@ -30,7 +30,7 @@ class Chunker:
                     keywords)
 
             self.requester.create_question(
-                    title_text = "(Need image specific title)",
+                    title_text = "Look at the given image and try and provide question(s) about it",
                     typeflag = "image",
                     question_text = self.upload_image(filename))
 
@@ -49,7 +49,7 @@ class Chunker:
 
             for paragraph in paragraphs:
                 self.requester.create_question(
-                        title_text = "(Need paragraph specific title)",
+                        title_text = "Provide a question that ",
                         typeflag = "text",
                         question_text = paragraph)
 

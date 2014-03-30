@@ -7,7 +7,7 @@ class Verifier:
 
 
     def __init__(self):
-        self.HOST = "mechanicalturk.sandbox.amazonaws.com"
+        self.HOST = "mechanicalturk.amazonaws.com"
         self.mtc = MTurkConnection(host=self.HOST)
         self.choices = ["Option 1", "Option 2", "Option 3"]
 

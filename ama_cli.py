@@ -1,5 +1,6 @@
 import sys, chunker, requester
 from optparse import OptionParser
+import gui
 
 parser = OptionParser(usage = "usage: %prog filename")
 parser.add_option("-a", "--max_assignments", action = "store", type = "string", dest = "max_assignments")
